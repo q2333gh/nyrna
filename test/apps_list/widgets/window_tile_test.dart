@@ -31,7 +31,7 @@ final mockAppWindow = MockAppWindow();
 final mockHotkeyService = MockHotkeyService();
 final mockNativePlatform = MockNativePlatform();
 final mockProcessRepository = MockProcessRepository();
-final mockSettingsCubit = MockSettingsCubit();
+final SettingsCubit mockSettingsCubit = MockSettingsCubit();
 final mockStorageRepository = MockStorageRepository();
 final mockSystemTrayManager = MockSystemTrayManager();
 
@@ -44,6 +44,41 @@ const defaultTestWindow = Window(
   ),
   title: 'Home - KDE Community',
 );
+
+/// Pumps [WindowTile] with the required bloc providers.
+Future<AppsListCubit> _pumpWindowTile(WidgetTester tester) async {
+  final appsListCubit = AppsListCubit(
+    appVersion: mockAppVersion,
+    appWindow: mockAppWindow,
+    hotkeyService: mockHotkeyService,
+    nativePlatform: mockNativePlatform,
+    processRepository: mockProcessRepository,
+    settingsCubit: mockSettingsCubit,
+    storage: mockStorageRepository,
+    systemTrayManager: mockSystemTrayManager,
+  );
+
+  await tester.pumpWidget(
+    MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: Scaffold(
+        body: MultiBlocProvider(
+          providers: [
+            BlocProvider<SettingsCubit>.value(value: mockSettingsCubit),
+            BlocProvider.value(value: appsListCubit),
+          ],
+          child: const WindowTile(
+            window: defaultTestWindow,
+          ),
+        ),
+      ),
+    ),
+  );
+  await tester.pumpAndSettle();
+
+  return appsListCubit;
+}
 
 void main() {
   setUp(() {
@@ -61,10 +96,18 @@ void main() {
   testWidgets('Clicking more actions button shows context menu', (tester) async {
     final appsListCubit = await _pumpWindowTile(tester);
 
-    await tester.tap(find.byType(MenuAnchor));
+    final detailsButton = tester.widget<IconButton>(
+      find.descendant(
+        of: find.byType(MenuAnchor),
+        matching: find.byType(IconButton),
+      ),
+    );
+    detailsButton.onPressed!.call();
     await tester.pumpAndSettle();
 
-    expect(find.text('Suspend all instances'), findsOneWidget);
+    final context = tester.element(find.byType(WindowTile));
+    final l10n = AppLocalizations.of(context)!;
+    expect(find.text(l10n.suspendAllInstances), findsOneWidget);
 
     await appsListCubit.close();
   });
@@ -142,39 +185,4 @@ void main() {
     expect(titleText.style?.fontSize, 14.2);
     await appsListCubit.close();
   });
-
-  /// Pumps [WindowTile] with the required bloc providers.
-  Future<AppsListCubit> _pumpWindowTile(WidgetTester tester) async {
-    final appsListCubit = AppsListCubit(
-      appVersion: mockAppVersion,
-      appWindow: mockAppWindow,
-      hotkeyService: mockHotkeyService,
-      nativePlatform: mockNativePlatform,
-      processRepository: mockProcessRepository,
-      settingsCubit: mockSettingsCubit,
-      storage: mockStorageRepository,
-      systemTrayManager: mockSystemTrayManager,
-    );
-
-    await tester.pumpWidget(
-      MaterialApp(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(
-          body: MultiBlocProvider(
-            providers: [
-              BlocProvider.value(value: mockSettingsCubit),
-              BlocProvider.value(value: appsListCubit),
-            ],
-            child: const WindowTile(
-              window: defaultTestWindow,
-            ),
-          ),
-        ),
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    return appsListCubit;
-  }
 }
