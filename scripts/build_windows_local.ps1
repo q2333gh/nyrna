@@ -1,7 +1,18 @@
 param(
-    [switch]$SkipFlutterConfig
+    [switch]$SkipFlutterConfig,
+    [switch]$Incremental,
+    [switch]$RunPubGet,
+    [switch]$RunBuildRunner,
+    [ValidateSet('debug', 'profile', 'release')]
+    [string]$BuildMode = 'debug'
 )
+# 推荐你平时改 UI/逻辑时用：
+# .\scripts\build_windows_local.ps1 -Incremental -SkipFlutterConfig
+# 当改了依赖或生成代码相关再加：
 
+# powershell
+
+# .\scripts\build_windows_local.ps1 -Incremental -RunPubGet -RunBuildRunner -SkipFlutterConfig
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
@@ -99,7 +110,11 @@ Set-Location $repoRoot
 Write-Host "Working directory: $repoRoot" -ForegroundColor DarkCyan
 
 try {
-    Prepare-OutputDirectory -RepoRootPath $repoRoot
+    if (-not $Incremental) {
+        Prepare-OutputDirectory -RepoRootPath $repoRoot
+    } else {
+        Write-Host "Incremental mode: keeping existing output/ directory to maximize build reuse." -ForegroundColor Yellow
+    }
 
     if (-not $SkipFlutterConfig) {
         Write-Host "Configuring Flutter for Windows desktop..." -ForegroundColor Yellow
@@ -108,14 +123,34 @@ try {
         Write-Host "Skipping 'flutter config --enable-windows-desktop' (per parameter)..." -ForegroundColor Yellow
     }
 
-    Write-Host "Fetching pub dependencies (flutter pub get)..." -ForegroundColor Yellow
-    Invoke-Flutter "pub get"
+    $shouldRunPubGet = $RunPubGet -or (-not $Incremental)
+    if ($shouldRunPubGet) {
+        Write-Host "Fetching pub dependencies (flutter pub get)..." -ForegroundColor Yellow
+        Invoke-Flutter "pub get"
+    } else {
+        Write-Host "Incremental mode: skipping 'flutter pub get' (use -RunPubGet to force)." -ForegroundColor Yellow
+    }
 
-    Write-Host "Running flutter_app_builder for Windows..." -ForegroundColor Yellow
-    Invoke-Flutter "pub run flutter_app_builder -v --platforms=windows"
+    if ($Incremental) {
+        if ($RunBuildRunner) {
+            Write-Host "Incremental mode: running build_runner..." -ForegroundColor Yellow
+            Invoke-Flutter "pub run build_runner build --delete-conflicting-outputs"
+        } else {
+            Write-Host "Incremental mode: skipping build_runner (use -RunBuildRunner to force)." -ForegroundColor Yellow
+        }
 
-    Write-Host ""
-    Write-Host "Build finished. Check the 'output' directory under the repo root for artifacts." -ForegroundColor Green
+        Write-Host "Incremental mode: running direct Flutter build (windows/$BuildMode)..." -ForegroundColor Yellow
+        Invoke-Flutter "build windows --$BuildMode"
+        Write-Host ""
+        Write-Host "Incremental build finished. Primary output: build\\windows\\x64\\runner\\$BuildMode" -ForegroundColor Green
+    }
+    else {
+        Write-Host "Running flutter_app_builder for Windows..." -ForegroundColor Yellow
+        Invoke-Flutter "pub run flutter_app_builder -v --platforms=windows"
+
+        Write-Host ""
+        Write-Host "Build finished. Check the 'output' directory under the repo root for artifacts." -ForegroundColor Green
+    }
 }
 catch {
     Write-Error "Build failed: $($_.Exception.Message)"

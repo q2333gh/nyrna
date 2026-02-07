@@ -64,6 +64,9 @@ class _AppsListPageState extends State<AppsListPage> {
             builder: (context, state) {
               List<Window> windows = state.windows;
               windows = _filterWindows(windows, state.windowFilter);
+              final compactCards = context.select(
+                (SettingsCubit cubit) => cubit.state.compactCards,
+              );
 
               return Stack(
                 children: [
@@ -77,12 +80,7 @@ class _AppsListPageState extends State<AppsListPage> {
                         if (!state.loading && state.windows.isEmpty) ...[
                           const _NoWindowsCard(),
                         ] else ...[
-                          ...windows.map(
-                            (window) => WindowTile(
-                              key: ValueKey(window),
-                              window: window,
-                            ),
-                          ),
+                          ..._buildGroupedWindowTiles(windows, compactCards),
                         ],
                       ],
                     ),
@@ -177,6 +175,121 @@ class _AppsListPageState extends State<AppsListPage> {
 
       return executable.contains(windowFilter) || title.contains(windowFilter);
     }).toList();
+  }
+
+  List<Widget> _buildGroupedWindowTiles(List<Window> windows, bool compactCards) {
+    if (windows.isEmpty) return const [];
+
+    final tiles = <Widget>[];
+    var index = 0;
+
+    while (index < windows.length) {
+      final current = windows[index];
+      final group = <Window>[current];
+      var cursor = index + 1;
+
+      while (cursor < windows.length &&
+          windows[cursor].process.executable == current.process.executable) {
+        group.add(windows[cursor]);
+        cursor++;
+      }
+
+      final groupTiles = group
+          .map(
+            (window) => WindowTile(
+              key: ValueKey(window),
+              window: window,
+            ),
+          )
+          .toList();
+
+      if (group.length > 1) {
+        tiles.add(
+          _ExecutableGroupOutline(
+            compactCards: compactCards,
+            children: groupTiles,
+          ),
+        );
+      } else {
+        tiles.addAll(groupTiles);
+      }
+
+      index = cursor;
+    }
+
+    return tiles;
+  }
+}
+
+class _ExecutableGroupOutline extends StatelessWidget {
+  final bool compactCards;
+  final List<Widget> children;
+
+  const _ExecutableGroupOutline({
+    required this.compactCards,
+    required this.children,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: CustomPaint(
+        painter: _DashedGroupOutlinePainter(
+          compactCards: compactCards,
+          color: Theme.of(context).colorScheme.primary.withOpacity(0.35),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: children,
+        ),
+      ),
+    );
+  }
+}
+
+class _DashedGroupOutlinePainter extends CustomPainter {
+  final bool compactCards;
+  final Color color;
+
+  const _DashedGroupOutlinePainter({
+    required this.compactCards,
+    required this.color,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    // Keep the outline visually equidistant from card edges.
+    final horizontalInset = compactCards ? 8.0 : 6.0;
+    final verticalInset = compactCards ? 0.0 : 2.0;
+    final rect = Rect.fromLTWH(
+      horizontalInset,
+      verticalInset,
+      size.width - (horizontalInset * 2),
+      size.height - (verticalInset * 2),
+    );
+    final path = Path()
+      ..addRRect(
+        RRect.fromRectAndRadius(rect, const Radius.circular(12)),
+      );
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3.8;
+
+    for (final metric in path.computeMetrics()) {
+      double distance = 0;
+      while (distance < metric.length) {
+        final next = distance + 5 > metric.length ? metric.length : distance + 5;
+        canvas.drawPath(metric.extractPath(distance, next), paint);
+        distance += 9;
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _DashedGroupOutlinePainter oldDelegate) {
+    return oldDelegate.color != color || oldDelegate.compactCards != compactCards;
   }
 }
 
