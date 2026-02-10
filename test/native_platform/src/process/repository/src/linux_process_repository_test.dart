@@ -123,5 +123,26 @@ void main() {
         expect(processStatus, ProcessStatus.normal);
       });
     });
+
+    group('terminate:', () {
+      test('sends sigkill to provided pid', () async {
+        const testPid = 777;
+        ProcessSignal? receivedSignal;
+        int? receivedPid;
+
+        mockKill = ((int pid, [ProcessSignal signal = ProcessSignal.sigterm]) {
+          receivedPid = pid;
+          receivedSignal = signal;
+          return true;
+        });
+
+        final repo = LinuxProcessRepository(mockKill, mockRun);
+        final successful = await repo.terminate(testPid);
+
+        expect(successful, true);
+        expect(receivedPid, testPid);
+        expect(receivedSignal, ProcessSignal.sigkill);
+      });
+    });
   });
 }

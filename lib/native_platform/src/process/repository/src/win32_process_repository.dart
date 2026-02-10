@@ -138,6 +138,30 @@ class Win32ProcessRepository extends ProcessRepository {
     return successful;
   }
 
+  @override
+  Future<bool> terminate(int pid) async {
+    final processHandle = OpenProcess(
+      PROCESS_TERMINATE,
+      FALSE,
+      pid,
+    );
+    if (processHandle == NULL) {
+      log.w('Failed to open process handle for terminate: ${GetLastError()}');
+      return false;
+    }
+
+    final result = TerminateProcess(processHandle, 1);
+    final successful = (result != 0);
+    log.i('Terminating $pid was successful: $successful');
+
+    final handleClosed = CloseHandle(processHandle);
+    if (handleClosed == 0) {
+      log.e('terminate failed to close the process handle.');
+    }
+
+    return successful;
+  }
+
   /// Returns a list of child processes for the provided [pid].
   Future<List<int>> _getChildProcesses(int pid) async {
     final childPids = <int>[];
