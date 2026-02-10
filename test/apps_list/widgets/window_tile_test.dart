@@ -108,6 +108,7 @@ void main() {
     final context = tester.element(find.byType(WindowTile));
     final l10n = AppLocalizations.of(context)!;
     expect(find.text(l10n.suspendAllInstances), findsOneWidget);
+    expect(find.text('Kill process'), findsOneWidget);
 
     await appsListCubit.close();
   });
@@ -171,6 +172,34 @@ void main() {
       card.margin,
       const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
     );
+
+    await appsListCubit.close();
+  });
+
+  testWidgets('Kill process action calls terminate for window pid', (
+    tester,
+  ) async {
+    when(
+      mockProcessRepository.terminate(defaultTestWindow.process.pid),
+    ).thenAnswer((_) async => true);
+
+    final appsListCubit = await _pumpWindowTile(tester);
+
+    final detailsButton = tester.widget<IconButton>(
+      find.descendant(
+        of: find.byType(MenuAnchor),
+        matching: find.byType(IconButton),
+      ),
+    );
+    detailsButton.onPressed!.call();
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Kill process'));
+    await tester.pumpAndSettle();
+
+    verify(
+      mockProcessRepository.terminate(defaultTestWindow.process.pid),
+    ).called(1);
 
     await appsListCubit.close();
   });

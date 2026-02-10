@@ -269,6 +269,12 @@ class _DetailsButton extends StatelessWidget {
             );
           },
         );
+        final killProcessButton = MenuItemButton(
+          child: const Text('Kill process'),
+          onPressed: () async {
+            await context.read<AppsListCubit>().kill(window);
+          },
+        );
 
         final Widget moreActionsButton = MenuAnchor(
           builder: (context, controller, child) {
@@ -296,6 +302,7 @@ class _DetailsButton extends StatelessWidget {
               },
             ),
             toggleAllButton,
+            killProcessButton,
             hideProcessButton,
           ],
         );

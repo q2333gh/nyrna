@@ -254,6 +254,15 @@ class AppsListCubit extends Cubit<AppsListState> {
     }
   }
 
+  /// Terminate the process associated with the given window.
+  Future<bool> kill(Window window) async {
+    log.i('Beginning kill for window: $window');
+    final successful = await _processRepository.terminate(window.process.pid);
+    log.i('kill was successful: $successful');
+    await manualRefresh();
+    return successful;
+  }
+
   /// React when a configured hotkey is pressed.
   void _listenForHotkey() {
     _hotkeyService.hotkeyTriggeredStream.listen((hotkey) async {
