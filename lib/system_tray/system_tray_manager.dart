@@ -57,6 +57,12 @@ class SystemTrayManager {
             _eventStreamController.add(SystemTrayEvent.exit);
           },
         ),
+        // Workaround for a Windows tray menu rendering bug where the last
+        // visible item can be clipped in some environments.
+        MenuItem(
+          label: ' ',
+          onClick: (_) {},
+        ),
       ],
     );
 
