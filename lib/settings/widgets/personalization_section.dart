@@ -69,9 +69,7 @@ class _ExecutableFirstTile extends StatelessWidget {
           secondary: const Icon(Icons.vertical_align_top),
           value: state.showExecutableFirst,
           onChanged: (value) async {
-            await context
-                .read<SettingsCubit>()
-                .updateShowExecutableFirst(value);
+            await context.read<SettingsCubit>().updateShowExecutableFirst(value);
           },
         );
       },
@@ -96,9 +94,7 @@ class _LimitWindowTitleTile extends StatelessWidget {
           secondary: const Icon(Icons.wrap_text),
           value: state.limitWindowTitleToOneLine,
           onChanged: (value) async {
-            await context
-                .read<SettingsCubit>()
-                .updateLimitWindowTitleToOneLine(value);
+            await context.read<SettingsCubit>().updateLimitWindowTitleToOneLine(value);
           },
         );
       },
@@ -122,8 +118,7 @@ class _PinSuspendedWindowsTile extends StatelessWidget {
                 ),
                 WidgetSpan(
                   child: Tooltip(
-                    message:
-                        AppLocalizations.of(context)!.pinSuspendedWindowsTooltip,
+                    message: AppLocalizations.of(context)!.pinSuspendedWindowsTooltip,
                     child: const Icon(
                       Icons.help_outline,
                       size: 18,

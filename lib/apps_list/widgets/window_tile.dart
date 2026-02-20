@@ -90,16 +90,15 @@ class _WindowTileState extends State<WindowTile> {
               title: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                if (showExecutableFirst)
-                  Text(
-                    widget.window.process.executable,
-                    key: const Key('window-tile-executable-first'),
-                  ),
+                  if (showExecutableFirst)
+                    Text(
+                      widget.window.process.executable,
+                      key: const Key('window-tile-executable-first'),
+                    ),
                   Text(
                     widget.window.title,
                     maxLines: (limitWindowTitle) ? 1 : null,
-                    overflow:
-                        (limitWindowTitle) ? TextOverflow.ellipsis : null,
+                    overflow: (limitWindowTitle) ? TextOverflow.ellipsis : null,
                   ),
                 ],
               ),

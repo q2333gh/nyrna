@@ -15,16 +15,14 @@ void main() {
     reset(mockSettingsCubit);
     when(mockSettingsCubit.state).thenReturn(SettingsState.initial());
     when(mockSettingsCubit.updateHideProcessPid(any)).thenAnswer((_) async {});
-    when(mockSettingsCubit.updateShowExecutableFirst(any))
-        .thenAnswer((_) async {});
-    when(mockSettingsCubit.updateLimitWindowTitleToOneLine(any))
-        .thenAnswer((_) async {});
-    when(mockSettingsCubit.updatePinSuspendedWindows(any))
-        .thenAnswer((_) async {});
+    when(mockSettingsCubit.updateShowExecutableFirst(any)).thenAnswer((_) async {});
+    when(mockSettingsCubit.updateLimitWindowTitleToOneLine(any)).thenAnswer((_) async {});
+    when(mockSettingsCubit.updatePinSuspendedWindows(any)).thenAnswer((_) async {});
   });
 
-  testWidgets('renders personalization tiles and toggles for each setting',
-      (tester) async {
+  testWidgets('renders personalization tiles and toggles for each setting', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,

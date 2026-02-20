@@ -274,7 +274,7 @@ void main() {
       });
     });
 
-  group('hotkey:', () {
+    group('hotkey:', () {
       test('default hotkey is Pause', () {
         expect(state.hotKey.physicalKey, PhysicalKeyboardKey.pause);
         expect(state.hotKey.modifiers, null);

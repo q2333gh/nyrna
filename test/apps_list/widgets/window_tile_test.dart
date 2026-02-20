@@ -79,8 +79,9 @@ void main() {
     await appsListCubit.close();
   });
 
-  testWidgets('Executable moves to title when showExecutableFirst is enabled',
-      (tester) async {
+  testWidgets('Executable moves to title when showExecutableFirst is enabled', (
+    tester,
+  ) async {
     when(mockSettingsCubit.state).thenReturn(
       SettingsState.initial().copyWith(showExecutableFirst: true),
     );
@@ -97,38 +98,38 @@ void main() {
     await appsListCubit.close();
   });
 
-/// Pumps [WindowTile] with the required bloc providers.
-Future<AppsListCubit> _pumpWindowTile(WidgetTester tester) async {
-  final appsListCubit = AppsListCubit(
-    appVersion: mockAppVersion,
-    appWindow: mockAppWindow,
-    hotkeyService: mockHotkeyService,
-    nativePlatform: mockNativePlatform,
-    processRepository: mockProcessRepository,
-    settingsCubit: mockSettingsCubit,
-    storage: mockStorageRepository,
-    systemTrayManager: mockSystemTrayManager,
-  );
+  /// Pumps [WindowTile] with the required bloc providers.
+  Future<AppsListCubit> _pumpWindowTile(WidgetTester tester) async {
+    final appsListCubit = AppsListCubit(
+      appVersion: mockAppVersion,
+      appWindow: mockAppWindow,
+      hotkeyService: mockHotkeyService,
+      nativePlatform: mockNativePlatform,
+      processRepository: mockProcessRepository,
+      settingsCubit: mockSettingsCubit,
+      storage: mockStorageRepository,
+      systemTrayManager: mockSystemTrayManager,
+    );
 
-  await tester.pumpWidget(
-    MaterialApp(
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
-      supportedLocales: AppLocalizations.supportedLocales,
-      home: Scaffold(
-        body: MultiBlocProvider(
-          providers: [
-            BlocProvider.value(value: mockSettingsCubit),
-            BlocProvider.value(value: appsListCubit),
-          ],
-          child: const WindowTile(
-            window: defaultTestWindow,
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: MultiBlocProvider(
+            providers: [
+              BlocProvider.value(value: mockSettingsCubit),
+              BlocProvider.value(value: appsListCubit),
+            ],
+            child: const WindowTile(
+              window: defaultTestWindow,
+            ),
           ),
         ),
       ),
-    ),
-  );
-  await tester.pumpAndSettle();
+    );
+    await tester.pumpAndSettle();
 
-  return appsListCubit;
-}
+    return appsListCubit;
+  }
 }
