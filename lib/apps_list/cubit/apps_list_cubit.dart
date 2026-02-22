@@ -72,6 +72,11 @@ class AppsListCubit extends Cubit<AppsListState> {
     // Filter out windows that are likely not desired or workable,
     // for example the root window, unknown (0) pid, etc.
     windows.removeWhere((element) => element.process.pid < 10);
+    windows.removeWhere(
+      (element) => _settingsCubit.state.hiddenExecutables.contains(
+        element.process.executable,
+      ),
+    );
 
     // Update windows with favorite data.
     windows = await _windowsWithFavoriteData(windows);
@@ -247,6 +252,15 @@ class AppsListCubit extends Cubit<AppsListState> {
     for (var match in matchingWindows) {
       await toggle(match);
     }
+  }
+
+  /// Terminate the process associated with the given window.
+  Future<bool> kill(Window window) async {
+    log.i('Beginning kill for window: $window');
+    final successful = await _processRepository.terminate(window.process.pid);
+    log.i('kill was successful: $successful');
+    await manualRefresh();
+    return successful;
   }
 
   /// React when a configured hotkey is pressed.

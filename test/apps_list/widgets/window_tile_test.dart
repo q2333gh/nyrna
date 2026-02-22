@@ -31,7 +31,7 @@ final mockAppWindow = MockAppWindow();
 final mockHotkeyService = MockHotkeyService();
 final mockNativePlatform = MockNativePlatform();
 final mockProcessRepository = MockProcessRepository();
-final mockSettingsCubit = MockSettingsCubit();
+final SettingsCubit mockSettingsCubit = MockSettingsCubit();
 final mockStorageRepository = MockStorageRepository();
 final mockSystemTrayManager = MockSystemTrayManager();
 
@@ -44,6 +44,41 @@ const defaultTestWindow = Window(
   ),
   title: 'Home - KDE Community',
 );
+
+/// Pumps [WindowTile] with the required bloc providers.
+Future<AppsListCubit> _pumpWindowTile(WidgetTester tester) async {
+  final appsListCubit = AppsListCubit(
+    appVersion: mockAppVersion,
+    appWindow: mockAppWindow,
+    hotkeyService: mockHotkeyService,
+    nativePlatform: mockNativePlatform,
+    processRepository: mockProcessRepository,
+    settingsCubit: mockSettingsCubit,
+    storage: mockStorageRepository,
+    systemTrayManager: mockSystemTrayManager,
+  );
+
+  await tester.pumpWidget(
+    MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: Scaffold(
+        body: MultiBlocProvider(
+          providers: [
+            BlocProvider<SettingsCubit>.value(value: mockSettingsCubit),
+            BlocProvider<AppsListCubit>.value(value: appsListCubit),
+          ],
+          child: const WindowTile(
+            window: defaultTestWindow,
+          ),
+        ),
+      ),
+    ),
+  );
+  await tester.pumpAndSettle();
+
+  return appsListCubit;
+}
 
 void main() {
   setUp(() {
@@ -61,10 +96,19 @@ void main() {
   testWidgets('Clicking more actions button shows context menu', (tester) async {
     final appsListCubit = await _pumpWindowTile(tester);
 
-    await tester.tap(find.byType(MenuAnchor));
+    final detailsButton = tester.widget<IconButton>(
+      find.descendant(
+        of: find.byType(MenuAnchor),
+        matching: find.byType(IconButton),
+      ),
+    );
+    detailsButton.onPressed!.call();
     await tester.pumpAndSettle();
 
-    expect(find.text('Suspend all instances'), findsOneWidget);
+    final context = tester.element(find.byType(WindowTile));
+    final l10n = AppLocalizations.of(context)!;
+    expect(find.text(l10n.suspendAllInstances), findsOneWidget);
+    expect(find.text('Kill process'), findsOneWidget);
 
     await appsListCubit.close();
   });
@@ -98,38 +142,76 @@ void main() {
     await appsListCubit.close();
   });
 
-  /// Pumps [WindowTile] with the required bloc providers.
-  Future<AppsListCubit> _pumpWindowTile(WidgetTester tester) async {
-    final appsListCubit = AppsListCubit(
-      appVersion: mockAppVersion,
-      appWindow: mockAppWindow,
-      hotkeyService: mockHotkeyService,
-      nativePlatform: mockNativePlatform,
-      processRepository: mockProcessRepository,
-      settingsCubit: mockSettingsCubit,
-      storage: mockStorageRepository,
-      systemTrayManager: mockSystemTrayManager,
+  testWidgets('ListTile shrinks inner padding when compactCards is enabled', (
+    tester,
+  ) async {
+    when(mockSettingsCubit.state).thenReturn(
+      SettingsState.initial().copyWith(compactCards: true),
     );
 
-    await tester.pumpWidget(
-      MaterialApp(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(
-          body: MultiBlocProvider(
-            providers: [
-              BlocProvider.value(value: mockSettingsCubit),
-              BlocProvider.value(value: appsListCubit),
-            ],
-            child: const WindowTile(
-              window: defaultTestWindow,
-            ),
-          ),
-        ),
+    final appsListCubit = await _pumpWindowTile(tester);
+
+    final ListTile listTile = tester.widget(find.byType(ListTile));
+    expect(listTile.dense, true);
+    expect(
+      listTile.contentPadding,
+      const EdgeInsets.symmetric(vertical: 2, horizontal: 18),
+    );
+
+    await appsListCubit.close();
+  });
+
+  testWidgets('Card margin tightens with compactCards', (tester) async {
+    when(mockSettingsCubit.state).thenReturn(
+      SettingsState.initial().copyWith(compactCards: true),
+    );
+
+    final appsListCubit = await _pumpWindowTile(tester);
+    final Card card = tester.widget(find.byType(Card));
+    expect(
+      card.margin,
+      const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+    );
+
+    await appsListCubit.close();
+  });
+
+  testWidgets('Kill process action calls terminate for window pid', (
+    tester,
+  ) async {
+    when(
+      mockProcessRepository.terminate(defaultTestWindow.process.pid),
+    ).thenAnswer((_) async => true);
+
+    final appsListCubit = await _pumpWindowTile(tester);
+
+    final detailsButton = tester.widget<IconButton>(
+      find.descendant(
+        of: find.byType(MenuAnchor),
+        matching: find.byType(IconButton),
       ),
     );
+    detailsButton.onPressed!.call();
     await tester.pumpAndSettle();
 
-    return appsListCubit;
-  }
+    await tester.tap(find.text('Kill process'));
+    await tester.pumpAndSettle();
+
+    verify(
+      mockProcessRepository.terminate(defaultTestWindow.process.pid),
+    ).called(1);
+
+    await appsListCubit.close();
+  });
+
+  testWidgets('compact mode title uses tighter font size', (tester) async {
+    when(mockSettingsCubit.state).thenReturn(
+      SettingsState.initial().copyWith(compactCards: true),
+    );
+
+    final appsListCubit = await _pumpWindowTile(tester);
+    final Text titleText = tester.widget(find.byKey(const Key('window-tile-title')));
+    expect(titleText.style?.fontSize, 14.2);
+    await appsListCubit.close();
+  });
 }

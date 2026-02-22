@@ -127,6 +127,13 @@ class LinuxProcessRepository extends ProcessRepository {
     }
   }
 
+  @override
+  Future<bool> terminate(int pid) async {
+    final bool successful = _kill(pid, ProcessSignal.sigkill);
+    log.i('Terminating $pid was successful: $successful');
+    return successful;
+  }
+
   /// Suspend the provided [pid].
   bool _suspendPid(int pid) {
     final bool successful = _kill(pid, ProcessSignal.sigstop);

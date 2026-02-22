@@ -107,12 +107,18 @@ void main() {
       expect(state.hideProcessPid, false);
       expect(state.showExecutableFirst, false);
       expect(state.limitWindowTitleToOneLine, false);
+      expect(state.compactCards, false);
+      expect(state.hiddenExecutables, isEmpty);
     });
 
     test('loads stored personalization preferences', () async {
       when(storage.getValue('hideProcessPid')).thenAnswer((_) async => true);
       when(storage.getValue('showExecutableFirst')).thenAnswer((_) async => true);
       when(storage.getValue('limitWindowTitleToOneLine')).thenAnswer((_) async => true);
+      when(storage.getValue('compactCards')).thenAnswer((_) async => true);
+      when(storage.getValue('hiddenExecutables')).thenAnswer(
+        (_) async => ['foo.exe'],
+      );
 
       cubit = await SettingsCubit.init(
         autostartService: autostartService,
@@ -123,6 +129,8 @@ void main() {
       expect(state.hideProcessPid, true);
       expect(state.showExecutableFirst, true);
       expect(state.limitWindowTitleToOneLine, true);
+      expect(state.compactCards, true);
+      expect(state.hiddenExecutables, ['foo.exe']);
     });
 
     test('ignoring update works', () async {
@@ -239,6 +247,43 @@ void main() {
           storage.saveValue(
             key: 'limitWindowTitleToOneLine',
             value: true,
+          ),
+        ).called(1);
+      });
+
+      test('compact cards toggle persists', () async {
+        expect(state.compactCards, false);
+        await cubit.updateCompactCards(true);
+        expect(state.compactCards, true);
+        verify(
+          storage.saveValue(
+            key: 'compactCards',
+            value: true,
+          ),
+        ).called(1);
+      });
+
+      test('hide executable persists', () async {
+        expect(state.hiddenExecutables, isEmpty);
+        await cubit.hideExecutable('foo.exe');
+        expect(state.hiddenExecutables, ['foo.exe']);
+        verify(
+          storage.saveValue(
+            key: 'hiddenExecutables',
+            value: ['foo.exe'],
+          ),
+        ).called(1);
+      });
+
+      test('restore executable persists', () async {
+        await cubit.hideExecutable('foo.exe');
+        expect(state.hiddenExecutables, ['foo.exe']);
+        await cubit.restoreExecutable('foo.exe');
+        expect(state.hiddenExecutables, isEmpty);
+        verify(
+          storage.saveValue(
+            key: 'hiddenExecutables',
+            value: [],
           ),
         ).called(1);
       });

@@ -48,4 +48,9 @@ abstract class ProcessRepository {
   ///
   /// Return value is `true` if successful.
   Future<bool> suspend(int pid);
+
+  /// Attempts to terminate (kill) a process associated with [pid].
+  ///
+  /// Return value is `true` if successful.
+  Future<bool> terminate(int pid);
 }
