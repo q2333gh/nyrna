@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:nyrna/app_version/app_version.dart';
+import 'package:nyrna/logs/logs.dart';
 import 'package:nyrna/apps_list/apps_list.dart';
 import 'package:nyrna/hotkey/global/hotkey_service.dart';
 import 'package:nyrna/localization/app_localizations.dart';
@@ -81,6 +82,10 @@ Future<AppsListCubit> _pumpWindowTile(WidgetTester tester) async {
 }
 
 void main() {
+  setUpAll(() async {
+    await LoggingManager.initialize(verbose: false);
+  });
+
   setUp(() {
     reset(mockAppVersion);
     reset(mockHotkeyService);
